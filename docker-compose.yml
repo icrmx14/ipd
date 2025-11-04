@@ -1,29 +1,29 @@
 version: '3.8'
 
 services:
-  # This service will be named 'app1'
   app1:
-    # Build the image from the ./app directory
     build: ./app
-    # Override the Dockerfile's CMD to run server1.py
     command: python server1.py
 
-  # This service will be named 'app2'
   app2:
-    # Build the image from the ./app directory (it uses the same image)
     build: ./app
-    # Override the Dockerfile's CMD to run server2.py
     command: python server2.py
 
-  # The load balancer
   haproxy:
     image: haproxy:2.8
     ports:
-      # Map your computer's port 8080 to the container's port 8080
       - "8080:8080"
     volumes:
-      # Mount our config file into the HAProxy container
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     depends_on:
       - app1
       - app2
+  
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80" # Maps localhost:80 to the container's port 80
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro # Mounts your frontend folder
+    depends_on:
+      - haproxy
