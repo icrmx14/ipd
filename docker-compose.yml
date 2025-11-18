@@ -1,29 +1,77 @@
-version: '3.8'
-
+# Note: I removed the obsolete 'version' key
 services:
-  app1:
+  # --- THE NEW SCALABLE APP SERVICE ---
+  app:
     build: ./app
-    command: python server1.py
+    # No command override needed, Dockerfile handles it
+    deploy:
+      replicas: 10 # <-- HERE'S THE MAGIC!
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
 
-  app2:
-    build: ./app
-    command: python server2.py
-
+  # --- YOUR OTHER SERVICES (mostly unchanged) ---
+  
   haproxy:
     image: haproxy:2.8
     ports:
-      - "8080:8080"
+      - "8080:8080" # App
+      - "8081:8081" # Old stats port (if you still want it)
     volumes:
       - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     depends_on:
-      - app1
-      - app2
-  
+      - app
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+
   frontend:
     image: nginx:alpine
     ports:
-      - "80:80" # Maps localhost:80 to the container's port 80
+      - "80:80"
     volumes:
-      - ./frontend:/usr/share/nginx/html:ro # Mounts your frontend folder
+      - ./frontend:/usr/share/nginx/html:ro
     depends_on:
       - haproxy
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+
+  # --- ELK STACK (unchanged) ---
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    container_name: elasticsearch
+    environment:
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.10
+    container_name: logstash
+    ports:
+      - "12201:12201/udp"
+    volumes:
+      - ./pipeline:/usr/share/logstash/pipeline:ro
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.10
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
+    depends_on:
+      - elasticsearch
+
+volumes:
+  esdata:
+    driver: local
