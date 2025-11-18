@@ -3,14 +3,15 @@ FROM python:3.10-slim
 
 # Set the working directory inside the container
 WORKDIR /app
-#copying only req file
-COPY requirements.txt .
-# Install Flask
-RUN pip install -r requirements.txt 
 
-# Copy EVERYTHING from the 'app' folder into the container
-# This includes server1.py and server2.py
+# 1. Copy ONLY the requirements file
+COPY requirements.txt .
+
+# 2. Install the packages from that file
+RUN pip install -r requirements.txt
+
+# 3. NOW copy the rest of your app code
 COPY . .
 
-# A default command (though docker-compose will override it)
-CMD ["python", "server1.py"]
+# 4. The command to run when the container starts
+CMD ["python", "server.py"]

@@ -2,68 +2,25 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HAProxy Load Balancer Demo</title>
-    <link rel="stylesheet" href="style.css"> </head>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+</head>
 <body>
-    <div class="container">
-        <h1>HAProxy Load Balancer Demo</h1>
-        <p>Click the button to call the backend and see which server responds!</p>
-        <button id="apiButton">Call Backend</button>
-
-        <div class="loading-spinner" id="spinner"></div>
-
-        <div class="response-area">
-            <h2>Last Response:</h2>
-            <div id="server-display">No call yet</div>
-            <div id="message-display"></div>
-            <div id="timestamp-display"></div>
+    <main class="container">
+        <h1>HAProxy Load Balancer</h1>
+        <p>Click the button to send a request. The load balancer will route it to one of the 10 backend servers.</p>
+        
+        <button id="callButton">Call Backend</button>
+        
+        <div id="response" class="response-card" aria-live="polite">
+            <div id="spinner" class="spinner" style="display: none;"></div>
+            
+            <div id="content">
+                <p class="placeholder">Click the button to see which server responds...</p>
+            </div>
         </div>
-    </div>
-
-    <script>
-        document.getElementById('apiButton').onclick = function() {
-            const serverDisplay = document.getElementById('server-display');
-            const messageDisplay = document.getElementById('message-display');
-            const timestampDisplay = document.getElementById('timestamp-display');
-            const spinner = document.getElementById('spinner');
-
-            // Show spinner and clear previous response
-            spinner.style.display = 'block';
-            serverDisplay.innerText = '';
-            serverDisplay.className = ''; // Clear classes
-            messageDisplay.innerText = '';
-            timestampDisplay.innerText = '';
-
-            fetch('http://localhost:8080/') // Still calls HAProxy on port 8080
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json(); // Expect JSON now
-                })
-                .then(data => {
-                    spinner.style.display = 'none'; // Hide spinner
-                    serverDisplay.innerText = data.server_id;
-                    messageDisplay.innerText = data.message;
-                    timestampDisplay.innerText = `Received at: ${data.timestamp}`;
-
-                    // Dynamically apply class for coloring
-                    if (data.server_id.includes('Server 1')) {
-                        serverDisplay.classList.add('server1');
-                        serverDisplay.classList.remove('server2');
-                    } else if (data.server_id.includes('Server 2')) {
-                        serverDisplay.classList.add('server2');
-                        serverDisplay.classList.remove('server1');
-                    }
-                })
-                .catch(error => {
-                    spinner.style.display = 'none'; // Hide spinner
-                    serverDisplay.innerText = 'Error calling backend!';
-                    messageDisplay.innerText = error.message;
-                    timestampDisplay.innerText = '';
-                    console.error('Fetch error:', error);
-                });
-        };
-    </script>
+    </main>
 </body>
 </html>
