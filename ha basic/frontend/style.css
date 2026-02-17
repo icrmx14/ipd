@@ -1,0 +1,135 @@
+/* General Setup */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f0f4f8;
+    color: #333;
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+/* Main Container */
+.container {
+    max-width: 600px;
+    width: 100%;
+    background-color: #ffffff;
+    padding: 2.5rem;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.07);
+    text-align: center;
+}
+
+h1 {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-top: 0;
+}
+
+p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #555;
+    margin-bottom: 2rem;
+}
+
+/* Button */
+button {
+    background: linear-gradient(90deg, #3498db, #2980b9);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 14px 28px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+    margin-bottom: 2rem;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.5);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Response Card */
+.response-card {
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 1.5rem;
+    min-height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: left;
+    transition: all 0.3s ease;
+}
+
+.placeholder {
+    font-style: italic;
+    color: #888;
+}
+
+/* Response Content Styling */
+.response-content h3 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+/* Dynamic colors for server ID */
+.server-0 { color: #e74c3c; }
+.server-1 { color: #e67e22; }
+.server-2 { color: #f1c40f; }
+.server-3 { color: #2ecc71; }
+.server-4 { color: #1abc9c; }
+.server-5 { color: #3498db; }
+.server-6 { color: #9b59b6; }
+.server-7 { color: #34495e; }
+.server-8 { color: #7f8c8d; }
+.server-9 { color: #c0392b; }
+
+.response-content p {
+    margin: 0;
+    font-size: 1rem;
+    color: #444;
+}
+
+.response-content small {
+    font-size: 0.9rem;
+    color: #777;
+    margin-top: 0.5rem;
+    display: block;
+}
+
+/* Error State */
+.error {
+    color: #D8000C;
+    background-color: #FFD2D2;
+    border: 1px solid #D8000C;
+    font-weight: bold;
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

@@ -1,0 +1,92 @@
+services:
+  # --- AI HEALER (Uses the same image, different command) ---
+  ai-healer:
+    build: ./app               # Builds from the 'app' folder
+    command: python healer.py   # <--- Overrides CMD to run the healer script
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # Grants permission to restart containers
+    depends_on:
+      - elasticsearch
+      - app
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # --- SCALABLE APP SERVICE ---
+  app:
+    build: ./app               # Builds from the 'app' folder
+    # command: python server.py # Optional: matches the default CMD in Dockerfile
+    deploy:
+      replicas: 10
+    environment:
+      - PYTHONUNBUFFERED=1
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "app"
+
+  # --- PROXY & FRONTEND ---
+  haproxy:
+    image: haproxy:2.8-alpine  # CHANGED: Switched to Alpine version to fix image error
+    ports:
+      - "8080:8080" # App Load Balancer
+      - "8404:8404" # HAProxy Stats
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - app
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "haproxy"
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - haproxy
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://127.0.0.1:12201"
+        tag: "frontend"
+
+  # --- ELK STACK (Unchanged) ---
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    container_name: elasticsearch
+    environment:
+      - "discovery.type=single-node"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.10
+    container_name: logstash
+    ports:
+      - "12201:12201/udp"
+    volumes:
+      - ./pipeline:/usr/share/logstash/pipeline:ro
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.10
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
+    depends_on:
+      - elasticsearch
+
+volumes:
+  esdata:
+    driver: local
