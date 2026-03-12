@@ -1,0 +1,6 @@
+# Elasticsearch Configuration
+cluster.name: "ipd-cluster"
+network.host: 0.0.0.0
+discovery.type: single-node
+xpack.security.enabled: false
+xpack.monitoring.collection.enabled: true

@@ -1,0 +1,36 @@
+# ── Environment ──
+.env
+*.env.local
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# ── Node ──
+node_modules/
+
+# ── Docker ──
+*.log
+
+# ── OS ──
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Data volumes (don't commit) ──
+mongo_data/
+es_data/
+
+# ── Test results ──
+*.tsv

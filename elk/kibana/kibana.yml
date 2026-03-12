@@ -1,0 +1,5 @@
+# Kibana Configuration
+server.host: "0.0.0.0"
+server.name: "ipd-kibana"
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+monitoring.ui.container.elasticsearch.enabled: true

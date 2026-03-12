@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPD — Container Load Balancer Platform</title>
+    <meta name="description"
+        content="Upload your project, auto-containerize, and load balance with HAProxy + ELK monitoring">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+
+<body>
+    <!-- ─── Sidebar ─── -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">IPD Platform</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-section="upload">
+                <span class="nav-icon">📤</span>
+                <span>Upload & Deploy</span>
+            </a>
+            <a href="#" class="nav-item" data-section="overview">
+                <span class="nav-icon">📊</span>
+                <span>Overview</span>
+            </a>
+            <a href="#" class="nav-item" data-section="containers">
+                <span class="nav-icon">🐳</span>
+                <span>Containers</span>
+            </a>
+            <a href="#" class="nav-item" data-section="scaling">
+                <span class="nav-icon">📐</span>
+                <span>Scaling</span>
+            </a>
+            <a href="#" class="nav-item" data-section="loadbalancer">
+                <span class="nav-icon">⚖️</span>
+                <span>Load Balancer</span>
+            </a>
+            <a href="#" class="nav-item" data-section="logs">
+                <span class="nav-icon">📋</span>
+                <span>Logs</span>
+            </a>
+            <a href="#" class="nav-item" data-section="monitoring">
+                <span class="nav-icon">📈</span>
+                <span>Monitoring</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="health-indicator" id="healthDot">
+                <span class="dot healthy"></span>
+                <span id="healthLabel">System Ready</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ─── Main Content ─── -->
+    <main class="main-content">
+        <header class="top-bar">
+            <h1 id="pageTitle">Upload & Deploy</h1>
+            <div class="top-bar-actions">
+                <span class="timestamp" id="lastUpdated">--:--:--</span>
+                <button class="btn btn-sm btn-ghost" id="refreshBtn" title="Refresh">🔄</button>
+            </div>
+        </header>
+
+        <!-- ═══ UPLOAD & DEPLOY SECTION ═══ -->
+        <section class="content-section active" id="section-upload">
+            <!-- Step Indicator -->
+            <div class="steps-bar">
+                <div class="step active" id="step1">
+                    <span class="step-num">1</span>
+                    <span class="step-label">Upload Services</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" id="step2">
+                    <span class="step-num">2</span>
+                    <span class="step-label">Configure</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step" id="step3">
+                    <span class="step-num">3</span>
+                    <span class="step-label">Deploy</span>
+                </div>
+            </div>
+
+            <!-- Upload Cards -->
+            <div class="upload-grid">
+                <!-- Backend Upload -->
+                <div class="upload-card" id="uploadBackend">
+                    <div class="upload-icon">🐍</div>
+                    <h3>Backend Service</h3>
+                    <p>Upload your backend code as a ZIP file<br>(Flask, Django, Express, Spring, etc.)</p>
+                    <div class="upload-zone" id="backendZone">
+                        <input type="file" id="backendFile" accept=".zip" hidden>
+                        <div class="upload-placeholder" id="backendPlaceholder">
+                            <span class="upload-plus">+</span>
+                            <span>Drop ZIP or click to browse</span>
+                        </div>
+                        <div class="upload-success hidden" id="backendSuccess">
+                            <span>✅</span>
+                            <span id="backendInfo">Uploaded</span>
+                        </div>
+                    </div>
+                    <span class="upload-status" id="backendStatus">Required</span>
+                </div>
+
+                <!-- Frontend Upload -->
+                <div class="upload-card" id="uploadFrontend">
+                    <div class="upload-icon">🌐</div>
+                    <h3>Frontend Service</h3>
+                    <p>Upload your frontend code as a ZIP file<br>(HTML/CSS/JS, React, Vue, etc.)</p>
+                    <div class="upload-zone" id="frontendZone">
+                        <input type="file" id="frontendFile" accept=".zip" hidden>
+                        <div class="upload-placeholder" id="frontendPlaceholder">
+                            <span class="upload-plus">+</span>
+                            <span>Drop ZIP or click to browse</span>
+                        </div>
+                        <div class="upload-success hidden" id="frontendSuccess">
+                            <span>✅</span>
+                            <span id="frontendInfo">Uploaded</span>
+                        </div>
+                    </div>
+                    <span class="upload-status" id="frontendStatus">Optional</span>
+                </div>
+
+                <!-- Database Upload -->
+                <div class="upload-card" id="uploadDatabase">
+                    <div class="upload-icon">🗄️</div>
+                    <h3>Database Config</h3>
+                    <p>Upload init scripts or select a database type below</p>
+                    <div class="upload-zone" id="databaseZone">
+                        <input type="file" id="databaseFile" accept=".zip" hidden>
+                        <div class="upload-placeholder" id="databasePlaceholder">
+                            <span class="upload-plus">+</span>
+                            <span>Drop ZIP or click to browse</span>
+                        </div>
+                        <div class="upload-success hidden" id="databaseSuccess">
+                            <span>✅</span>
+                            <span id="databaseInfo">Uploaded</span>
+                        </div>
+                    </div>
+                    <span class="upload-status" id="databaseStatus">Optional</span>
+                </div>
+            </div>
+
+            <!-- Configuration Panel -->
+            <div class="card" id="configPanel">
+                <div class="card-header">
+                    <h2>⚙️ Deployment Configuration</h2>
+                </div>
+                <div class="card-body">
+                    <div class="config-grid">
+                        <div class="config-field">
+                            <label for="projectName">Project Name</label>
+                            <input type="text" id="projectName" value="myproject" placeholder="my-project">
+                        </div>
+                        <div class="config-field">
+                            <label for="backendPort">Backend Port</label>
+                            <input type="number" id="backendPort" value="" placeholder="Auto-detect">
+                            <small>Leave empty for auto-detection</small>
+                        </div>
+                        <div class="config-field">
+                            <label for="replicaCount">Backend Replicas</label>
+                            <input type="number" id="replicaCount" value="3" min="1" max="20">
+                        </div>
+                        <div class="config-field">
+                            <label for="lbAlgorithm">LB Algorithm</label>
+                            <select id="lbAlgorithm">
+                                <option value="roundrobin">Round Robin</option>
+                                <option value="leastconn">Least Connections</option>
+                                <option value="source">Source IP Hash</option>
+                            </select>
+                        </div>
+                        <div class="config-field">
+                            <label for="dbType">Database Type</label>
+                            <select id="dbType">
+                                <option value="mongodb">MongoDB</option>
+                                <option value="mysql">MySQL</option>
+                                <option value="postgres">PostgreSQL</option>
+                            </select>
+                        </div>
+                        <div class="config-field">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="enableDb" checked>
+                                <span>Enable Database</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deploy Button -->
+            <div class="deploy-actions">
+                <button class="btn btn-primary btn-lg" id="deployBtn" onclick="deployProject()">
+                    🚀 Build & Deploy Project
+                </button>
+                <button class="btn btn-danger btn-lg hidden" id="stopBtn" onclick="stopDeployment()">
+                    🛑 Stop Deployment
+                </button>
+            </div>
+
+            <!-- Deploy Log -->
+            <div class="card hidden" id="deployLogCard">
+                <div class="card-header">
+                    <h2>📋 Deployment Log</h2>
+                    <span class="badge" id="deployStatusBadge">idle</span>
+                </div>
+                <div class="card-body">
+                    <div class="log-viewer" id="deployLog"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ OVERVIEW SECTION ═══ -->
+        <section class="content-section" id="section-overview">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon blue">🐳</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="totalContainers">--</span>
+                        <span class="stat-label">Total Containers</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon green">✅</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="runningCount">--</span>
+                        <span class="stat-label">Running</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon orange">⚙️</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="backendReplicas">--</span>
+                        <span class="stat-label">Backend Replicas</span>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon red">🛑</div>
+                    <div class="stat-info">
+                        <span class="stat-value" id="stoppedCount">--</span>
+                        <span class="stat-label">Stopped</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>All Services</h2>
+                </div>
+                <div class="card-body">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Container</th>
+                                <th>Image</th>
+                                <th>Status</th>
+                                <th>Ports</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="servicesTable">
+                            <tr>
+                                <td colspan="5" class="muted">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="quick-links">
+                <a href="http://localhost:8404/stats" target="_blank" class="quick-link-card">
+                    <span class="ql-icon">⚖️</span><span class="ql-label">HAProxy Stats</span><span
+                        class="ql-port">:8404</span>
+                </a>
+                <a href="http://localhost:5601" target="_blank" class="quick-link-card">
+                    <span class="ql-icon">📊</span><span class="ql-label">Kibana</span><span
+                        class="ql-port">:5601</span>
+                </a>
+                <a href="http://localhost:9200" target="_blank" class="quick-link-card">
+                    <span class="ql-icon">🔍</span><span class="ql-label">Elasticsearch</span><span
+                        class="ql-port">:9200</span>
+                </a>
+                <a href="http://localhost:8080" target="_blank" class="quick-link-card">
+                    <span class="ql-icon">🌐</span><span class="ql-label">App (via LB)</span><span
+                        class="ql-port">:8080</span>
+                </a>
+            </div>
+        </section>
+
+        <!-- ═══ CONTAINERS ═══ -->
+        <section class="content-section" id="section-containers">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Backend Containers</h2><span class="badge" id="backendCountBadge">0</span>
+                </div>
+                <div class="card-body">
+                    <div class="container-grid" id="backendGrid">
+                        <p class="muted">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ SCALING ═══ -->
+        <section class="content-section" id="section-scaling">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Scale Backend Instances</h2>
+                </div>
+                <div class="card-body scaling-body">
+                    <div class="scale-control">
+                        <label for="replicaSlider">Number of Replicas</label>
+                        <div class="slider-group">
+                            <input type="range" id="replicaSlider" min="1" max="20" value="3" class="slider">
+                            <span class="slider-value" id="sliderValue">3</span>
+                        </div>
+                        <div class="scale-presets">
+                            <button class="btn btn-sm btn-outline" onclick="setScale(1)">1</button>
+                            <button class="btn btn-sm btn-outline" onclick="setScale(3)">3</button>
+                            <button class="btn btn-sm btn-outline" onclick="setScale(5)">5</button>
+                            <button class="btn btn-sm btn-outline" onclick="setScale(10)">10</button>
+                            <button class="btn btn-sm btn-outline" onclick="setScale(15)">15</button>
+                            <button class="btn btn-sm btn-outline" onclick="setScale(20)">20</button>
+                        </div>
+                        <button class="btn btn-primary btn-lg" id="scaleBtn" onclick="performScale()">🚀 Apply
+                            Scaling</button>
+                        <div id="scaleResult" class="result-box hidden"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ LOAD BALANCER ═══ -->
+        <section class="content-section" id="section-loadbalancer">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Load Balancing Algorithm</h2>
+                </div>
+                <div class="card-body">
+                    <div class="algorithm-cards">
+                        <div class="algo-card" data-algo="roundrobin" onclick="setAlgorithm('roundrobin')">
+                            <div class="algo-icon">🔄</div>
+                            <h3>Round Robin</h3>
+                            <p>Equal distribution in sequence. Best for uniform workloads.</p>
+                        </div>
+                        <div class="algo-card" data-algo="leastconn" onclick="setAlgorithm('leastconn')">
+                            <div class="algo-icon">📉</div>
+                            <h3>Least Connections</h3>
+                            <p>Routes to least-busy server. Best for variable-length requests.</p>
+                        </div>
+                        <div class="algo-card" data-algo="source" onclick="setAlgorithm('source')">
+                            <div class="algo-icon">📌</div>
+                            <h3>Source IP Hash</h3>
+                            <p>Sticky sessions — same client always hits same server.</p>
+                        </div>
+                    </div>
+                    <div id="algoResult" class="result-box hidden"></div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>HAProxy Configuration</h2><button class="btn btn-sm btn-ghost"
+                        onclick="loadHAProxyConfig()">Reload</button>
+                </div>
+                <div class="card-body">
+                    <pre class="config-viewer" id="haproxyConfigView">Loading...</pre>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ LOGS ═══ -->
+        <section class="content-section" id="section-logs">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Recent Logs</h2><button class="btn btn-sm btn-ghost" onclick="loadLogs()">🔄</button>
+                </div>
+                <div class="card-body">
+                    <div class="log-viewer" id="logViewer">
+                        <p class="muted">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>Error Logs</h2><span class="badge badge-danger" id="errorCountBadge">0</span>
+                </div>
+                <div class="card-body">
+                    <div class="log-viewer log-errors" id="errorLogViewer">
+                        <p class="muted">Loading...</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ═══ MONITORING ═══ -->
+        <section class="content-section" id="section-monitoring">
+            <div class="card">
+                <div class="card-header">
+                    <h2>System Health</h2>
+                </div>
+                <div class="card-body">
+                    <div class="health-grid" id="healthGrid">
+                        <p class="muted">Checking...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h2>External Dashboards</h2>
+                </div>
+                <div class="card-body monitoring-links">
+                    <a href="http://localhost:5601/app/discover" target="_blank" class="monitoring-link"><span>📊</span>
+                        Kibana Discover</a>
+                    <a href="http://localhost:5601/app/dashboards" target="_blank"
+                        class="monitoring-link"><span>📈</span> Kibana Dashboards</a>
+                    <a href="http://localhost:8404/stats" target="_blank" class="monitoring-link"><span>⚖️</span>
+                        HAProxy Statistics</a>
+                    <a href="http://localhost:9200/_cat/indices?v" target="_blank"
+                        class="monitoring-link"><span>🗄️</span> Elasticsearch Indices</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/static/dashboard.js"></script>
+</body>
+
+</html>

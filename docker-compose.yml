@@ -1,0 +1,189 @@
+# ═══════════════════════════════════════════════════════════════════
+#  Intelligent Containerized Load Balancing System
+#  Docker Compose Orchestration — Production Configuration
+# ═══════════════════════════════════════════════════════════════════
+
+services:
+  # ──────────── FRONTEND (Nginx + Static Files) ────────────
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "${FRONTEND_PORT:-80}:80"
+    depends_on:
+      - haproxy
+    networks:
+      - app-network
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:${LOGSTASH_PORT:-12201}"
+        tag: "frontend"
+    restart: unless-stopped
+
+  # ──────────── LOAD BALANCER (HAProxy) ────────────
+  haproxy:
+    image: haproxy:2.8-alpine
+    container_name: haproxy
+    ports:
+      - "${HAPROXY_LB_PORT:-8080}:8080"
+      - "${HAPROXY_STATS_PORT:-8404}:8404"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:${LOGSTASH_PORT:-12201}"
+        tag: "haproxy"
+    restart: unless-stopped
+
+  # ──────────── BACKEND (Flask + Gunicorn) ────────────
+  backend:
+    build: ./backend
+    deploy:
+      replicas: ${DEFAULT_REPLICAS:-3}
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.25"
+          memory: 128M
+    environment:
+      - FLASK_ENV=${FLASK_ENV:-production}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:-dev-secret}
+      - MONGO_URI=mongodb://mongodb:27017/${MONGO_DB:-appdb}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - mongodb
+    networks:
+      - app-network
+    logging:
+      driver: gelf
+      options:
+        gelf-address: "udp://localhost:${LOGSTASH_PORT:-12201}"
+        tag: "backend"
+    restart: unless-stopped
+
+  # ──────────── DATABASE (MongoDB) ────────────
+  mongodb:
+    build: ./database
+    container_name: mongodb
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=${MONGO_DB:-appdb}
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ──────────── CONTROLLER DASHBOARD (FastAPI) ────────────
+  controller:
+    build: ./controller
+    container_name: controller
+    ports:
+      - "${CONTROLLER_PORT:-9000}:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./haproxy/haproxy.cfg:/config/haproxy.cfg
+      - workspace_data:/workspace
+    environment:
+      - ES_HOST=http://elasticsearch:${ES_PORT:-9200}
+      - HAPROXY_CFG_PATH=/config/haproxy.cfg
+      - HAPROXY_STATS_PASS=${HAPROXY_STATS_PASS:-haproxy123}
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - elasticsearch
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ──────────── ELASTICSEARCH ────────────
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=${ES_JAVA_OPTS:--Xms512m -Xmx512m}"
+      - xpack.security.enabled=false
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+      - ./elk/elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "${ES_PORT:-9200}:9200"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ──────────── LOGSTASH ────────────
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.17.10
+    container_name: logstash
+    ports:
+      - "${LOGSTASH_PORT:-12201}:12201/udp"
+    volumes:
+      - ./elk/logstash/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    depends_on:
+      - elasticsearch
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ──────────── KIBANA ────────────
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.17.10
+    container_name: kibana
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    volumes:
+      - ./elk/kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:${ES_PORT:-9200}
+    depends_on:
+      - elasticsearch
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # ──────────── AI HEALER (Self-Healing) ────────────
+  ai-healer:
+    build: ./healer
+    container_name: ai-healer
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - elasticsearch
+      - backend
+    environment:
+      - ES_HOST=http://elasticsearch:${ES_PORT:-9200}
+      - CHECK_INTERVAL=${CHECK_INTERVAL:-10}
+      - ERROR_THRESHOLD=${ERROR_THRESHOLD:-3}
+      - LOOKBACK_SECONDS=${LOOKBACK_SECONDS:-30}
+      - PYTHONUNBUFFERED=1
+    networks:
+      - app-network
+    restart: unless-stopped
+
+# ──────────── NETWORKS ────────────
+networks:
+  app-network:
+    driver: bridge
+    name: ipd-network
+
+# ──────────── VOLUMES ────────────
+volumes:
+  mongo_data:
+    driver: local
+    name: ipd-mongo-data
+  es_data:
+    driver: local
+    name: ipd-es-data
+  workspace_data:
+    driver: local
+    name: ipd-workspace
