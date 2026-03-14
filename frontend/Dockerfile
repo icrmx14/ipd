@@ -1,15 +1,27 @@
-# ── Frontend with Nginx Reverse Proxy ──
-FROM nginx:alpine
+# ── Frontend (Next.js) ──
+FROM node:20-alpine AS builder
 
-# Remove default config
-RUN rm /etc/nginx/conf.d/default.conf
+WORKDIR /app
 
-# Copy custom Nginx config
-COPY nginx.conf /etc/nginx/conf.d/
+# Install dependencies first (layer caching)
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Copy static frontend files
-COPY index.html /usr/share/nginx/html/
-COPY style.css  /usr/share/nginx/html/
-COPY script.js  /usr/share/nginx/html/
+# Copy source and build
+COPY . .
+RUN npm run build
 
-EXPOSE 80
+# ── Production Runner ──
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+ENV NODE_ENV=production
+
+# Copy built output
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/public ./public
+
+EXPOSE 3000
+
+CMD ["node", "server.js"]
